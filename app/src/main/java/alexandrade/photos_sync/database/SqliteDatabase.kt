@@ -1,6 +1,7 @@
 package alexandrade.photos_sync.database
 
 import alexandrade.photos_sync.database.daos.ImageDao
+import alexandrade.photos_sync.database.daos.RemotesDao
 import alexandrade.photos_sync.database.daos.SyncDao
 import alexandrade.photos_sync.database.entities.Image
 import alexandrade.photos_sync.database.entities.Remote
@@ -14,6 +15,7 @@ import androidx.room.RoomDatabase
 abstract class SqliteDatabase : RoomDatabase() {
     abstract fun imageDao(): ImageDao
     abstract fun syncDao(): SyncDao
+    abstract fun remotesDao(): RemotesDao
 
     companion object {
         private const val DATABASE_NAME = "my_database"

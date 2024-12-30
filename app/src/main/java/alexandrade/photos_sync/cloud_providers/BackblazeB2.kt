@@ -1,6 +1,8 @@
 package alexandrade.photos_sync.cloud_providers
 
+import alexandrade.photos_sync.database.entities.CloudProviders
 import alexandrade.photos_sync.database.entities.Image
+import alexandrade.photos_sync.database.entities.Remote
 import com.backblaze.b2.client.B2StorageClient
 import com.backblaze.b2.client.B2StorageClientFactory
 import com.backblaze.b2.client.contentSources.B2FileContentSource
@@ -80,8 +82,10 @@ class BackblazeB2(val appKeyId: String, val appKey: String, val bucketId: String
         }
     }
 
-    override fun createBucket() {
-        runInClient { client -> client.createBucket("photos_sync", "allPrivate") }
+    override fun createBucket(): Remote {
+        val bucket = runInClient { client -> client.createBucket("photos_sync", "allPrivate") }
+
+        return Remote("photos_sync", CloudProviders.BACKBLAZE, appKeyId, appKey, bucket.bucketId!!)
     }
 
     fun stopCoroutine() {
