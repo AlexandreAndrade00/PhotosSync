@@ -3,18 +3,18 @@ package alexandrade.photos_sync.database.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import alexandrade.photos_sync.R
-import alexandrade.photos_sync.utils.BackblazeConfigRoute
-import kotlin.reflect.KClass
+import alexandrade.photos_sync.cloud_providers.BackblazeB2
+import alexandrade.photos_sync.cloud_providers.CloudProvider
 
 enum class CloudProviders(
     val logoId: Int,
     val displayName: String,
-    val route: KClass<*>
+    val getStrategy: (Remote) -> CloudProvider
 ) {
     BACKBLAZE(
-        logoId = R.mipmap.backblaze_logo,
+        logoId = R.mipmap.ic_backblaze_logo,
         displayName = "BackBlaze",
-        route = BackblazeConfigRoute::class
+        getStrategy = { remote -> BackblazeB2(remote) }
     )
 }
 
@@ -24,5 +24,10 @@ data class Remote(
     val provider: CloudProviders,
     val apiKeyId: String,
     val apiKey: String,
-    val bucketId: String
-)
+    val bucketId: String,
+    val principal: Boolean
+) {
+    fun getStrategy(): CloudProvider {
+        return provider.getStrategy(this)
+    }
+}

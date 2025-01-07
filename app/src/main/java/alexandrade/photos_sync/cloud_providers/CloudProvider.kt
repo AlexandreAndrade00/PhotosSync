@@ -1,13 +1,16 @@
 package alexandrade.photos_sync.cloud_providers
 
 import alexandrade.photos_sync.database.entities.Image
-import alexandrade.photos_sync.database.entities.Remote
+import android.content.Context
+import kotlinx.coroutines.Deferred
 import java.util.UUID
 
 interface CloudProvider {
-    suspend fun getRemoteImagesIds() : List<UUID>
+    suspend fun getRemoteImagesIds(): List<UUID>
 
-    fun uploadImages(images: List<Image>)
+    suspend fun uploadImages(images: List<Image>, context: Context): List<Deferred<UUID>>
 
-    fun createBucket(): Remote
+    suspend fun downloadImages(imagesIds: List<UUID>, context: Context): List<Deferred<Image>>
+
+    fun cancel()
 }

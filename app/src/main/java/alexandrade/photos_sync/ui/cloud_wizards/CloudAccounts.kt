@@ -26,7 +26,11 @@ import kotlinx.coroutines.flow.map
 
 
 @Composable
-fun CloudAccounts(onRemoteClick: (Remote) -> Unit, onBackClick: () -> Unit) {
+fun CloudAccounts(
+    onRemoteClick: (Remote) -> Unit,
+    onBackClick: () -> Unit,
+    onAddCloud: () -> Unit
+) {
     val remotesViewModel = viewModel<RemotesViewModel>()
 
     val remotes by remotesViewModel.uiState.map { state ->
@@ -39,7 +43,7 @@ fun CloudAccounts(onRemoteClick: (Remote) -> Unit, onBackClick: () -> Unit) {
     Scaffold(
         topBar = { TopAppBarWithBack("Contas", onBackClick = onBackClick) },
         floatingActionButton = {
-            FloatingActionButton(onClick = {}) {
+            FloatingActionButton(onClick = onAddCloud) {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "Add cloud account"
@@ -74,5 +78,5 @@ fun CloudAccounts(onRemoteClick: (Remote) -> Unit, onBackClick: () -> Unit) {
 @Preview
 @Composable
 fun CloudSelectionPreview() {
-    CloudAccounts(onRemoteClick = {}, onBackClick = {})
+    CloudAccounts(onRemoteClick = {}, onBackClick = {}, onAddCloud = {})
 }

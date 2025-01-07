@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -24,7 +25,7 @@ import kotlinx.coroutines.flow.map
 
 
 @Composable
-fun ChronologyScreen(modifier: PaddingValues) {
+fun ChronologyScreen(modifier: PaddingValues, navigateToImageView: (String) -> Unit) {
     val context = LocalContext.current
     var hasPermission by remember {
         mutableStateOf(
@@ -74,7 +75,10 @@ fun ChronologyScreen(modifier: PaddingValues) {
         content = {
             items(images.size) { index ->
                 images[index].localPath?.let { path ->
-                    ShowImageFromPath(path, imageLoader = imageLoader)
+                    ShowImageFromPath(
+                        path,
+                        imageLoader = imageLoader,
+                        onClick = { navigateToImageView(images[index].uuid.toString()) })
                 } ?: run {
                     Box(
                         modifier = Modifier
@@ -91,14 +95,20 @@ fun ChronologyScreen(modifier: PaddingValues) {
 }
 
 @Composable
-fun ShowImageFromPath(imagePath: Uri, modifier: Modifier = Modifier, imageLoader: ImageLoader) {
+fun ShowImageFromPath(
+    imagePath: Uri,
+    modifier: Modifier = Modifier,
+    imageLoader: ImageLoader,
+    onClick: () -> Unit
+) {
     AsyncImage(
         model = imagePath,
         imageLoader = imageLoader,
         contentDescription = null,
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .height(200.dp)
+            .clickable(onClick = onClick),
         contentScale = ContentScale.Crop,
     )
 }

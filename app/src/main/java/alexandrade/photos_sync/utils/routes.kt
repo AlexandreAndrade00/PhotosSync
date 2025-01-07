@@ -1,7 +1,5 @@
 package alexandrade.photos_sync.utils
 
-import alexandrade.photos_sync.view_models.ChronologyViewModel
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -14,7 +12,7 @@ data object SettingsRoute
 data object CloudAccountsRoute
 
 @Serializable
-data object BackblazeConfigRoute
+data class ImageScreenRoute(val imageId: String)
 
 @Serializable
-data object ImageScreenRoute
+data object AddCloudRoute

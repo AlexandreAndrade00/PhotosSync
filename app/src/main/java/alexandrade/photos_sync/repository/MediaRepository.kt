@@ -14,8 +14,20 @@ import java.util.UUID
 class MediaRepository(val context: Context) {
     private val database = SqliteDatabase.getDatabase(context)
 
-    fun getImages(): Flow<List<Image>> {
-        return database.imageDao().getImages()
+    suspend fun addImage(image: Image) {
+        database.imageDao().insertImages(listOf(image))
+    }
+
+    fun updateImageStatus(imageId: UUID, status: SyncStatus) {
+        database.imageDao().updateImageStatus(imageId, status)
+    }
+
+    fun getImagesFlow(): Flow<List<Image>> {
+        return database.imageDao().getImagesFlow()
+    }
+
+    fun getImagesByStatus(status: SyncStatus): List<Image> {
+        return database.imageDao().getImagesByStatus(status)
     }
 
 
@@ -34,8 +46,9 @@ class MediaRepository(val context: Context) {
                 Image(
                     UUID.randomUUID(),
                     SyncStatus.LOCAL,
-                    value.first,
-                    value.second
+                    value.uri,
+                    value.name,
+                    value.contentType
                 )
             }
 

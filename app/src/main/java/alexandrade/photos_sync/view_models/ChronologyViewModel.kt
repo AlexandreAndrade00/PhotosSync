@@ -21,7 +21,7 @@ class ChronologyViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 mediaRepository.syncExtenalStorage()
 
-                mediaRepository.getImages().collect { images ->
+                mediaRepository.getImagesFlow().collect { images ->
                     _uiState.value = UiState.Success(images)
                 }
             } catch (e: Exception) {

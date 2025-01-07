@@ -18,7 +18,7 @@ class RemotesViewModel(application: Application) : AndroidViewModel(application)
     init {
         viewModelScope.launch {
             try {
-                remotesRepository.getRemotes().collect { remotes ->
+                remotesRepository.getRemotesFlow().collect { remotes ->
                     _uiState.value = UiState.Success(remotes)
                 }
             } catch (e: Exception) {

@@ -10,7 +10,7 @@ import androidx.room.TypeConverters
 import java.util.UUID
 
 enum class SyncStatus {
-    LOCAL, REMOTE, BOTH
+    LOCAL, REMOTE, BOTH;
 }
 
 @Entity(tableName = "images", indices = [Index(value = ["local_path"], unique = true)])
@@ -20,4 +20,5 @@ data class Image(
     val status: SyncStatus,
     @ColumnInfo(name = "local_path") val localPath: Uri?,
     val name: String,
+    @ColumnInfo(name = "content_type") val contentType: String
 )

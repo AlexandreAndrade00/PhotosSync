@@ -8,12 +8,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopAppBarWithBack(title: String, onBackClick: () -> Unit) {
+fun TopAppBarWithBack(
+    title: String,
+    onBackClick: () -> Unit,
+    icon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack
+) {
     TopAppBar(
         title = { Text(title) },
         navigationIcon = {
@@ -21,7 +24,7 @@ fun TopAppBarWithBack(title: String, onBackClick: () -> Unit) {
                 onBackClick()
             }) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = icon,
                     contentDescription = "Back button"
                 )
             }

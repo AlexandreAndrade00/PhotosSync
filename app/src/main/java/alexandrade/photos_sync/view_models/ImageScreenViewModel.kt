@@ -19,8 +19,8 @@ class ImageScreenViewModel(application: Application) : AndroidViewModel(applicat
     init {
         viewModelScope.launch {
             try {
-                mediaRepository.getImages().collect { images ->
-                    _uiState.value = UiState.Success(images, 0)
+                mediaRepository.getImagesFlow().collect { images ->
+                    _uiState.value = UiState.Success(images, null)
                 }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error("Failed to load items")
@@ -28,9 +28,19 @@ class ImageScreenViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    fun selectAnImage(imageId: UUID) {
+        when (_uiState.value) {
+            is UiState.Success -> _uiState.value =
+                UiState.Success((_uiState.value as UiState.Success).images, imageId)
+
+            is UiState.Error -> return
+            UiState.Loading -> return
+        }
+    }
+
     sealed class UiState {
         data object Loading : UiState()
-        data class Success(val images: List<Image>, val selectedImage: UUID) : UiState()
+        data class Success(val images: List<Image>, val selectedImage: UUID?) : UiState()
         data class Error(val message: String) : UiState()
     }
 }
