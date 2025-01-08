@@ -10,12 +10,12 @@ plugins {
 
 android {
     namespace = "alexandrade.photos_sync"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "alexandrade.photos_sync"
-        minSdk = 33
-        targetSdk = 34
+        minSdk = 30
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 

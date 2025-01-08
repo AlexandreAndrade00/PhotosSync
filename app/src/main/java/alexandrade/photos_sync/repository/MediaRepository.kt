@@ -4,9 +4,11 @@ import alexandrade.photos_sync.database.SqliteDatabase
 import alexandrade.photos_sync.database.entities.Image
 import alexandrade.photos_sync.database.entities.SyncHistory
 import alexandrade.photos_sync.database.entities.SyncStatus
+import alexandrade.photos_sync.database.entities.SyncType
 import alexandrade.photos_sync.utils.getImagesFromMediaStore
 import alexandrade.photos_sync.utils.getMostRecentImageDate
 import android.content.Context
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import java.util.Date
 import java.util.UUID
@@ -31,8 +33,10 @@ class MediaRepository(val context: Context) {
     }
 
 
-    suspend fun syncExtenalStorage() {
-        val lastSync: Date? = database.syncDao().getLastSync()?.date
+    suspend fun syncWithMediaStore() {
+        val syncs = database.syncDao().getSyncHistory(SyncType.LOCAL)
+        val lastSync: Date? = syncs.lastOrNull()?.date
+
         val recentImageDate: Date? = getMostRecentImageDate(context)
 
         if (lastSync?.after(recentImageDate) == true || lastSync?.equals(recentImageDate) == true) return
@@ -52,11 +56,25 @@ class MediaRepository(val context: Context) {
                 )
             }
 
-        database.imageDao().insertImages(images)
-        database.syncDao().insertSyncHistory(
-            SyncHistory(
-                date = recentImageDate!!
-            )
-        )
+        try {
+            database.withTransaction {
+                database.imageDao().insertImages(images)
+                database.syncDao().insertSyncHistory(
+                    SyncHistory(
+                        date = recentImageDate!!, syncType = SyncType.LOCAL
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun insertSyncHystory(syncHistory: SyncHistory) {
+        database.syncDao().insertSyncHistory(syncHistory)
+    }
+
+    fun getSyncHistoryRemote(): Flow<List<SyncHistory>> {
+        return database.syncDao().getSyncHistoryFlow(SyncType.REMOTE)
     }
 }

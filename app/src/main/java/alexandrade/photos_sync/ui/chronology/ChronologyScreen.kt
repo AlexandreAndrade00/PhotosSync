@@ -4,6 +4,7 @@ import alexandrade.photos_sync.view_models.ChronologyViewModel
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -28,12 +29,24 @@ import kotlinx.coroutines.flow.map
 fun ChronologyScreen(modifier: PaddingValues, navigateToImageView: (String) -> Unit) {
     val context = LocalContext.current
     var hasPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_MEDIA_IMAGES
-            ) == PackageManager.PERMISSION_GRANTED
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Check API level 33
+            // Request READ_MEDIA_IMAGES permission here using rememberLauncherForActivityResult as shown in previous examples
+            return@remember mutableStateOf(
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_MEDIA_IMAGES
+                ) == PackageManager.PERMISSION_GRANTED
+            )
+        } else {
+            // Use alternative approach for API levels below 33 (e.g., access images using older methods if necessary)
+            return@remember mutableStateOf(
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED
+            )
+        }
+
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -44,7 +57,11 @@ fun ChronologyScreen(modifier: PaddingValues, navigateToImageView: (String) -> U
 
     LaunchedEffect(Unit) {
         if (!hasPermission) {
-            launcher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                launcher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+            } else {
+                launcher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
         }
     }
 

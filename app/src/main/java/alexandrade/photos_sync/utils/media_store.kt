@@ -24,7 +24,7 @@ fun getImagesFromMediaStore(context: Context, date: Date?): List<MediaStoreImage
 
     if (date != null) {
         val dateTimeInSeconds = date.time / 1000
-        selection = "${MediaStore.Images.Media.DATE_ADDED} >= ?"
+        selection = "${MediaStore.Images.Media.DATE_ADDED} > ?"
         selectionArgs = arrayOf(dateTimeInSeconds.toString())
     } else {
         selection = null

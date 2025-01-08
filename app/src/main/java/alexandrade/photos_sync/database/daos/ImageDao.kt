@@ -17,9 +17,15 @@ interface ImageDao {
     @Query("UPDATE images SET status = :status WHERE uuid = :imageId")
     fun updateImageStatus(imageId: UUID, status: SyncStatus)
 
+    @Query("UPDATE images SET status = 'LOCAL' WHERE status = 'BOTH'")
+    fun updateLocalImagesStatus()
+
     @Query("SELECT * FROM images")
     fun getImagesFlow(): Flow<List<Image>>
 
     @Query("SELECT * FROM images WHERE status = :status")
     fun getImagesByStatus(status: SyncStatus): List<Image>
+
+    @Query("DELETE FROM images WHERE status = 'REMOTE'")
+    fun deleteRemoteImages()
 }

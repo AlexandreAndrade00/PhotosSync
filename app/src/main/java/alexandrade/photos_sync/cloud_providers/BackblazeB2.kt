@@ -94,30 +94,30 @@ class BackblazeB2(val remote: Remote) :
     override suspend fun uploadImages(images: List<Image>, context: Context): List<Deferred<UUID>> {
         val uploadUrlUrl = "/b2api/v3/b2_get_upload_url"
 
-        val response = scope.async(Dispatchers.IO) {
-            val b2Client = getClient(scope, remote.apiKeyId, remote.apiKey).await()
-
-            return@async b2Client.client.get(b2Client.apiUrl + uploadUrlUrl) {
-                headers {
-                    append(HttpHeaders.Authorization, b2Client.authorizationToken)
-                }
-                url {
-                    parameters.append("bucketId", remote.bucketId)
-                }
-            }
-        }.await()
-
-        val body: JsonElement = response.body()
-
-        val uploadUrl: String = body.jsonObject.getValue("uploadUrl").jsonPrimitive.content
-        val authorizationToken: String =
-            body.jsonObject.getValue("authorizationToken").jsonPrimitive.content
-
         val jobs: MutableList<Deferred<UUID>> = mutableListOf()
 
         images.forEach { image ->
             jobs.add(scope.async(Dispatchers.IO) {
                 val b2Client = getClient(scope, remote.apiKeyId, remote.apiKey).await()
+
+                val response = scope.async(Dispatchers.IO) {
+                    val b2Client = getClient(scope, remote.apiKeyId, remote.apiKey).await()
+
+                    return@async b2Client.client.get(b2Client.apiUrl + uploadUrlUrl) {
+                        headers {
+                            append(HttpHeaders.Authorization, b2Client.authorizationToken)
+                        }
+                        url {
+                            parameters.append("bucketId", remote.bucketId)
+                        }
+                    }
+                }.await()
+
+                val body: JsonElement = response.body()
+
+                val uploadUrl: String = body.jsonObject.getValue("uploadUrl").jsonPrimitive.content
+                val authorizationToken: String =
+                    body.jsonObject.getValue("authorizationToken").jsonPrimitive.content
 
                 val imageBytes = getImageBytes(image.localPath!!, context)
                 val imageSHA1 = calculateSHA1(imageBytes)

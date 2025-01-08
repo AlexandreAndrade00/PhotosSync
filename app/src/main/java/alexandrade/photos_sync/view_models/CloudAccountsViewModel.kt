@@ -5,12 +5,13 @@ import alexandrade.photos_sync.repository.RemotesRepository
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class RemotesViewModel(application: Application) : AndroidViewModel(application) {
+class CloudAccountsViewModel(application: Application) : AndroidViewModel(application) {
     private val remotesRepository = RemotesRepository(application)
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -24,6 +25,18 @@ class RemotesViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: Exception) {
                 _uiState.value = UiState.Error("Failed to load items")
             }
+        }
+    }
+
+    fun deleteRemote(remoteName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            remotesRepository.deleteRemote(remoteName)
+        }
+    }
+
+    fun setPrincipalRemote(remoteName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            remotesRepository.setPrincipalRemote(remoteName)
         }
     }
 

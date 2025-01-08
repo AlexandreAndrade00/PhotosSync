@@ -1,12 +1,9 @@
 package alexandrade.photos_sync.ui.cloud_wizards
 
 import alexandrade.photos_sync.database.entities.CloudProviders
-import alexandrade.photos_sync.database.entities.Remote
 import alexandrade.photos_sync.ui.TopAppBarWithBack
 import alexandrade.photos_sync.view_models.AddCloudViewModel
-import alexandrade.photos_sync.view_models.RemotesViewModel
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

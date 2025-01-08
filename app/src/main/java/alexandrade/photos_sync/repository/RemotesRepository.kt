@@ -3,6 +3,7 @@ package alexandrade.photos_sync.repository
 import alexandrade.photos_sync.database.SqliteDatabase
 import alexandrade.photos_sync.database.entities.Remote
 import android.content.Context
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 
 class RemotesRepository(val context: Context) {
@@ -14,6 +15,19 @@ class RemotesRepository(val context: Context) {
 
     suspend fun getRemotes(): List<Remote> {
         return database.remotesDao().getRemotes()
+    }
+
+    fun deleteRemote(remoteName: String) {
+        database.remotesDao().deleteRemote(remoteName)
+    }
+
+    suspend fun setPrincipalRemote(remoteName: String) {
+        database.withTransaction {
+            database.remotesDao().unsetPrincipalRemote()
+            database.remotesDao().setPrincipalRemote(remoteName)
+            database.imageDao().updateLocalImagesStatus()
+            database.imageDao().deleteRemoteImages()
+        }
     }
 
     suspend fun addRemote(remote: Remote) {

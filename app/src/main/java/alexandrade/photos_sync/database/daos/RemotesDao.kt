@@ -2,6 +2,7 @@ package alexandrade.photos_sync.database.daos
 
 import alexandrade.photos_sync.database.entities.Remote
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -23,4 +24,13 @@ interface RemotesDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addRemote(remote: Remote)
+
+    @Query("DELETE FROM remotes WHERE name = :remoteName")
+    fun deleteRemote(remoteName: String)
+
+    @Query("UPDATE remotes SET principal = TRUE WHERE name = :remoteName")
+    fun setPrincipalRemote(remoteName: String)
+
+    @Query("UPDATE remotes SET principal = FALSE")
+    fun unsetPrincipalRemote()
 }

@@ -12,6 +12,9 @@ data object SettingsRoute
 data object CloudAccountsRoute
 
 @Serializable
+data object SynchronizationRoute
+
+@Serializable
 data class ImageScreenRoute(val imageId: String)
 
 @Serializable
