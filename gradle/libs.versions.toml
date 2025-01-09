@@ -12,12 +12,17 @@ kotlinxSerializationJson = "1.7.3"
 ktorClientCio = "3.0.3"
 ktorClientContentNegotiation = "3.0.3"
 ktorClientCore = "3.0.3"
+ktorClientLogging = "3.0.3"
+ktorClientOkhttp = "3.0.3"
+ktorClientRetry = "3.0.3"
 ktorSerializationKotlinxJson = "3.0.3"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.9.3"
 composeBom = "2024.04.01"
+logbackClassic = "1.4.11"
 navigationCompose = "2.8.5"
 roomKtx = "2.6.1"
+slf4jApi = "2.0.16"
 workRuntimeKtx = "2.9.1"
 
 [libraries]
@@ -50,7 +55,12 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktorClientCio" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorClientContentNegotiation" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientCore" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktorClientLogging" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktorClientOkhttp" }
+ktor-client-retry = { module = "io.ktor:ktor-client-retry", version.ref = "ktorClientRetry" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorSerializationKotlinxJson" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logbackClassic" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4jApi" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

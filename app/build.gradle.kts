@@ -43,6 +43,7 @@ android {
     }
     packaging {
         resources.excludes.add("META-INF/DEPENDENCIES")
+        resources.excludes.add("META-INF/INDEX.LIST")
     }
 }
 

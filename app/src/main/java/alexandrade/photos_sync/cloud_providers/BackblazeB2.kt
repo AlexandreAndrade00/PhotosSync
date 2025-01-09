@@ -13,7 +13,9 @@ import android.content.Context
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
@@ -34,7 +36,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
@@ -43,6 +46,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import java.net.SocketTimeoutException
 import java.util.UUID
 
 private class B2Client(
@@ -57,11 +61,13 @@ class BackblazeB2(val remote: Remote) :
     CloudProvider {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    override suspend fun getRemoteImagesIds(): List<UUID> {
+    override suspend fun getRemoteImagesIds(): List<UUID>? {
         val url: String = "/b2api/v3/b2_list_file_names"
 
         val response = scope.async(Dispatchers.IO) {
             val b2Client = getClient(scope, remote.apiKeyId, remote.apiKey).await()
+
+            if (b2Client == null) return@async null
 
             return@async b2Client.client.post(b2Client.apiUrl + url) {
                 headers {
@@ -75,6 +81,8 @@ class BackblazeB2(val remote: Remote) :
                 )
             }
         }.await()
+
+        if (response == null) return null
 
         val body: JsonElement = response.body()
 
@@ -91,27 +99,25 @@ class BackblazeB2(val remote: Remote) :
         return imagesIds
     }
 
-    override suspend fun uploadImages(images: List<Image>, context: Context): List<Deferred<UUID>> {
+    override suspend fun uploadImages(images: List<Image>, context: Context): List<Deferred<UUID?>> {
         val uploadUrlUrl = "/b2api/v3/b2_get_upload_url"
 
-        val jobs: MutableList<Deferred<UUID>> = mutableListOf()
+        val jobs: MutableList<Deferred<UUID?>> = mutableListOf()
 
         images.forEach { image ->
             jobs.add(scope.async(Dispatchers.IO) {
                 val b2Client = getClient(scope, remote.apiKeyId, remote.apiKey).await()
 
-                val response = scope.async(Dispatchers.IO) {
-                    val b2Client = getClient(scope, remote.apiKeyId, remote.apiKey).await()
+                if (b2Client == null) return@async null
 
-                    return@async b2Client.client.get(b2Client.apiUrl + uploadUrlUrl) {
-                        headers {
-                            append(HttpHeaders.Authorization, b2Client.authorizationToken)
-                        }
-                        url {
-                            parameters.append("bucketId", remote.bucketId)
-                        }
+                val response = b2Client.client.get(b2Client.apiUrl + uploadUrlUrl) {
+                    headers {
+                        append(HttpHeaders.Authorization, b2Client.authorizationToken)
                     }
-                }.await()
+                    url {
+                        parameters.append("bucketId", remote.bucketId)
+                    }
+                }
 
                 val body: JsonElement = response.body()
 
@@ -147,14 +153,16 @@ class BackblazeB2(val remote: Remote) :
     override suspend fun downloadImages(
         imagesIds: List<UUID>,
         context: Context
-    ): List<Deferred<Image>> {
+    ): List<Deferred<Image?>> {
         val downloadUrl = "/file"
 
-        val images: MutableList<Deferred<Image>> = mutableListOf()
+        val images: MutableList<Deferred<Image?>> = mutableListOf()
 
         imagesIds.forEach { imageId ->
             images.add(scope.async(Dispatchers.IO) {
                 val b2Client = getClient(scope, remote.apiKeyId, remote.apiKey).await()
+
+                if (b2Client == null) return@async null
 
                 val downloadResponse = b2Client.client.get(b2Client.apiUrl + downloadUrl) {
                     url {
@@ -184,16 +192,39 @@ class BackblazeB2(val remote: Remote) :
     }
 
     companion object {
+        private val semaphore = Semaphore(5)
         private const val BASE_URL = "https://api.backblazeb2.com"
 
-        suspend fun createBucket(apiKeyId: String, apiKey: String, name: String): Remote {
+        private val client = HttpClient(CIO) {
+            expectSuccess = true
+            install(ContentNegotiation) {
+                json(Json {
+                    prettyPrint = true
+                    isLenient = true
+                    ignoreUnknownKeys = true
+                })
+            }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 300000 // 5 minutes
+            }
+            install(HttpRequestRetry) {
+                maxRetries = 3
+                retryOnExceptionIf { request, cause -> cause is ConnectTimeoutException || cause is SocketTimeoutException }
+            }
+        }
+
+        suspend fun createBucket(apiKeyId: String, apiKey: String, name: String): Remote? {
             val scope = CoroutineScope(Dispatchers.IO + Job())
 
             val url: String = "/b2api/v3/b2_create_bucket"
 
             try {
-                val bucketId: String = scope.async {
+                val bucketId: String? = scope.async(Dispatchers.IO) {
                     val b2Client = getClient(scope, apiKeyId, apiKey).await()
+
+                    if (b2Client == null) {
+                        return@async null
+                    }
 
                     try {
                         val response = b2Client.client.post(b2Client.apiUrl + url) {
@@ -243,6 +274,9 @@ class BackblazeB2(val remote: Remote) :
                     }
                 }.await()
 
+                if (bucketId == null) return null
+
+
                 return Remote(name, CloudProviders.BACKBLAZE, apiKeyId, apiKey, bucketId, false)
             } finally {
                 scope.cancel()
@@ -253,47 +287,43 @@ class BackblazeB2(val remote: Remote) :
             scope: CoroutineScope,
             apiKeyId: String,
             apiKey: String
-        ): Deferred<B2Client> {
+        ): Deferred<B2Client?> {
             val url = "/b2api/v3/b2_authorize_account"
 
-            val client = HttpClient(CIO) {
-                expectSuccess = true
-                install(HttpTimeout)
-                install(ContentNegotiation) {
-                    json(Json {
-                        prettyPrint = true
-                        isLenient = true
-                        ignoreUnknownKeys = true
-                    })
-                }
-            }
-
             return scope.async(Dispatchers.IO) {
-                val response: HttpResponse = client.get(BASE_URL + url) {
-                    headers {
-                        append(
-                            HttpHeaders.Authorization,
-                            "Basic" + encodeToBase64("$apiKeyId:$apiKey")
-                        )
+                try {
+                    val response: HttpResponse = semaphore.withPermit {
+                        return@withPermit client.get(BASE_URL + url) {
+                            headers {
+                                append(
+                                    HttpHeaders.Authorization,
+                                    "Basic" + encodeToBase64("$apiKeyId:$apiKey")
+                                )
+                            }
+                        }
                     }
+
+                    val jsonElement: JsonElement = response.body()
+
+                    val authorizationToken =
+                        jsonElement.jsonObject.getValue("authorizationToken").jsonPrimitive.content
+
+                    val accountId =
+                        jsonElement.jsonObject.getValue("accountId").jsonPrimitive.content
+
+                    val apiUrl =
+                        jsonElement
+                            .jsonObject.getValue("apiInfo")
+                            .jsonObject.getValue("storageApi")
+                            .jsonObject.getValue("apiUrl")
+                            .jsonPrimitive.content
+
+                    return@async B2Client(authorizationToken, apiUrl, accountId, client)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+
+                    return@async null
                 }
-
-                val jsonElement: JsonElement = response.body()
-
-                val authorizationToken =
-                    jsonElement.jsonObject.getValue("authorizationToken").jsonPrimitive.content
-
-                val accountId =
-                    jsonElement.jsonObject.getValue("accountId").jsonPrimitive.content
-
-                val apiUrl =
-                    jsonElement
-                        .jsonObject.getValue("apiInfo")
-                        .jsonObject.getValue("storageApi")
-                        .jsonObject.getValue("apiUrl")
-                        .jsonPrimitive.content
-
-                return@async B2Client(authorizationToken, apiUrl, accountId, client)
             }
         }
     }

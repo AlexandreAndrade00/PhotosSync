@@ -20,11 +20,11 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -45,7 +45,9 @@ class SyncWorker(val appContext: Context, workerParams: WorkerParameters) :
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            performSynchronization()
+            coroutineScope {
+                performSynchronization()
+            }
 
             Result.success()
         } catch (e: Exception) {
@@ -65,6 +67,8 @@ class SyncWorker(val appContext: Context, workerParams: WorkerParameters) :
 
         try {
             val remoteImagesIds = cloudProvider.getRemoteImagesIds()
+
+            if (remoteImagesIds == null) return
 
             val localImages = imagesRepository.getImagesByStatus(SyncStatus.LOCAL)
 
@@ -87,16 +91,21 @@ class SyncWorker(val appContext: Context, workerParams: WorkerParameters) :
             fun updateNotification() {
                 syncedFiles++
 
-                val messase = "A sincronizar ficheiro $syncedFiles de $totalSyncFiles"
-                val progress = (syncedFiles.toFloat() / totalSyncFiles) * 100
+                if (syncedFiles % 10 == 0) {
 
-                showNotification(progress.toInt(), messase)
+                    val messase = "A sincronizar ficheiro $syncedFiles de $totalSyncFiles"
+                    val progress = (syncedFiles.toFloat() / totalSyncFiles) * 100
+
+                    showNotification(progress.toInt(), messase)
+                }
             }
 
             supervisorScope {
                 uploadedImagesIds.forEachIndexed { i, imageFuture ->
                     uploadJobs.add(launch(Dispatchers.IO) {
                         val image = imageFuture.await()
+
+                        if (image == null) return@launch
 
                         imagesRepository.updateImageStatus(image, SyncStatus.BOTH)
 
@@ -108,6 +117,8 @@ class SyncWorker(val appContext: Context, workerParams: WorkerParameters) :
                     downloadJobs.add(launch(Dispatchers.IO) {
                         val image = imageFuture.await()
 
+                        if (image == null) return@launch
+
                         imagesRepository.addImage(image)
 
                         updateNotification()
@@ -117,6 +128,8 @@ class SyncWorker(val appContext: Context, workerParams: WorkerParameters) :
 
             uploadJobs.joinAll()
             downloadJobs.joinAll()
+
+            notificationManager.cancel(notificationId)
 
             imagesRepository.insertSyncHystory(
                 SyncHistory(

@@ -6,11 +6,11 @@ import kotlinx.coroutines.Deferred
 import java.util.UUID
 
 interface CloudProvider {
-    suspend fun getRemoteImagesIds(): List<UUID>
+    suspend fun getRemoteImagesIds(): List<UUID>?
 
-    suspend fun uploadImages(images: List<Image>, context: Context): List<Deferred<UUID>>
+    suspend fun uploadImages(images: List<Image>, context: Context): List<Deferred<UUID?>>
 
-    suspend fun downloadImages(imagesIds: List<UUID>, context: Context): List<Deferred<Image>>
+    suspend fun downloadImages(imagesIds: List<UUID>, context: Context): List<Deferred<Image?>>
 
     fun cancel()
 }

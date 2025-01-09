@@ -5,6 +5,7 @@ import alexandrade.photos_sync.database.entities.Remote
 import alexandrade.photos_sync.view_models.AddCloudViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -117,12 +118,13 @@ fun BackblazeConfig() {
                 enabled = false,
                 onValueChange = {},
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp).weight(1f)
             )
             Spacer(modifier = Modifier.width(8.dp))
             OutlinedButton(
                 onClick = { createBucket() },
                 enabled = name.value != "" && apiKeyid.value != "" && apiKey.value != "" && nameErrorText.value.isEmpty(),
+                modifier = Modifier.weight(0.4f).padding(end = 16.dp)
             ) { Text("Gerar") }
         }
     }
